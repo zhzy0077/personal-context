@@ -284,6 +284,48 @@
             margin: 15px 0;
             border-radius: 4px;
         }
+        .tab-container {
+            margin-top: 20px;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 12px 20px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #7f8c8d;
+            transition: all 0.2s ease;
+            margin-bottom: -2px;
+        }
+        .tab-btn:hover {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -496,28 +538,36 @@
                 <button class="close" onclick="closeHelpModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p>This guide shows you how to configure this MCP server in Claude Code or Claude Desktop.</p>
+                <p>This guide shows you how to configure this MCP server in various AI clients.</p>
 
                 <h3>🚀 Starting the Server</h3>
-                <p>Before connecting Claude Desktop, start the MCP server:</p>
+                <p>Before connecting any client, start the MCP server:</p>
                 <pre><code># Start the server (default: http://127.0.0.1:8000)
 uv run main.py
 
 # Or with custom host/port
 PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0 PERSONAL_CONTEXT_HTTP_PORT=3000 uv run main.py</code></pre>
 
-                <h3>🔧 Configuration File Location</h3>
-                <p>Add the configuration to your <code>claude_desktop_config.json</code> file:</p>
-                <ul>
-                    <li><strong>macOS:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
-                    <li><strong>Windows:</strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
-                </ul>
+                <div class="tab-container">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" onclick="openTab(event, 'claude-desktop')">🟣 Claude Desktop</button>
+                        <button class="tab-btn" onclick="openTab(event, 'opencode')">🔵 OpenCode</button>
+                    </div>
 
-                <h3>🌐 HTTP/SSE Transport Configuration</h3>
-                <p>This server uses HTTP Server-Sent Events (SSE) for MCP communication:</p>
+                    <!-- Claude Desktop Tab -->
+                    <div id="claude-desktop" class="tab-content active">
+                        <h4>📁 Configuration File Location</h4>
+                        <p>Add the configuration to your <code>claude_desktop_config.json</code> file:</p>
+                        <ul>
+                            <li><strong>macOS:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
+                            <li><strong>Windows:</strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
+                        </ul>
 
-                {% if auth_enabled %}
-                <pre><code>{
+                        <h4>🌐 HTTP/SSE Transport Configuration</h4>
+                        <p>This server uses HTTP Server-Sent Events (SSE) for MCP communication:</p>
+
+                        {% if auth_enabled %}
+                        <pre><code>{
   "mcpServers": {
     "personal-context": {
       "type": "sse",
@@ -528,11 +578,11 @@ PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0 PERSONAL_CONTEXT_HTTP_PORT=3000 uv run main.p
     }
   }
 }</code></pre>
-                <div class="warning-box">
-                    <strong>⚠️ Authentication Required:</strong> This server has authentication enabled. The configuration above includes your current credentials (username: <code>{{ auth_username }}</code>).
-                </div>
-                {% else %}
-                <pre><code>{
+                        <div class="warning-box">
+                            <strong>⚠️ Authentication Required:</strong> This server has authentication enabled. The configuration above includes your current credentials (username: <code>{{ auth_username }}</code>).
+                        </div>
+                        {% else %}
+                        <pre><code>{
   "mcpServers": {
     "personal-context": {
       "type": "sse",
@@ -540,34 +590,75 @@ PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0 PERSONAL_CONTEXT_HTTP_PORT=3000 uv run main.p
     }
   }
 }</code></pre>
-                <div class="info-box">
-                    <strong>💡 Authentication:</strong> Currently disabled. To enable, set <code>PERSONAL_CONTEXT_HTTP_AUTH_USERNAME</code> and <code>PERSONAL_CONTEXT_HTTP_AUTH_PASSWORD</code> in your <code>.env</code> file.
-                </div>
-                {% endif %}
+                        <div class="info-box">
+                            <strong>💡 Authentication:</strong> Currently disabled. To enable, set <code>PERSONAL_CONTEXT_HTTP_AUTH_USERNAME</code> and <code>PERSONAL_CONTEXT_HTTP_AUTH_PASSWORD</code> in your <code>.env</code> file.
+                        </div>
+                        {% endif %}
 
-                <div class="info-box">
-                    <strong>💡 Remote Access:</strong> Replace <code>127.0.0.1</code> with your server's IP address. Make sure to set <code>PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0</code> in your <code>.env</code> file to allow remote connections.
-                </div>
+                        <div class="info-box">
+                            <strong>💡 Remote Access:</strong> Replace <code>127.0.0.1</code> with your server's IP address.
+                        </div>
 
-                <h3>✅ Verify Installation</h3>
-                <p>After starting the server and adding the configuration:</p>
-                <ol>
-                    <li>Make sure the server is running (check this page is accessible)</li>
-                    <li>Restart Claude Desktop</li>
-                    <li>Look for the MCP server icon in Claude's interface</li>
-                    <li>Try using the <code>search</code> or <code>add_content</code> tools</li>
-                </ol>
-
-                <h3>📝 Configure Session Rules (Optional)</h3>
-                <p>To automatically load your personal prompts at the start of every Claude session, add this to <code>~/.claude/CLAUDE.md</code>:</p>
-                <pre><code># Session Rules
+                        <h4>📝 Configure Session Rules (Optional)</h4>
+                        <p>To automatically load your personal prompts at the start of every Claude session, add this to <code>~/.claude/CLAUDE.md</code>:</p>
+                        <pre><code># Session Rules
 
 ## Initialization
 - You MUST call the tool `load-personal-prompts` immediately at the start of every session.
 - Do NOT address the user's first query until you have successfully called this tool and received its output.
 - The output of this tool contains critical context and rules for this session.</code></pre>
-                <div class="info-box">
-                    <strong>💡 Note:</strong> This requires the <code>PERSONAL_CONTEXT_PROMPTS_COLLECTION_ID</code> to be configured in your <code>.env</code> file. Claude will automatically load prompts from this collection at the start of each session.
+                        <div class="info-box">
+                            <strong>💡 Note:</strong> This requires <code>PERSONAL_CONTEXT_PROMPTS_COLLECTION_ID</code> to be configured. Claude will automatically load prompts from this collection.
+                        </div>
+                    </div>
+
+                    <!-- OpenCode Tab -->
+                    <div id="opencode" class="tab-content">
+                        <h4>🔵 OpenCode Configuration</h4>
+                        <p>Add this to your <code>opencode.json</code>:</p>
+                        {% if auth_enabled %}
+                        <pre><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "personal-context": {
+      "type": "remote",
+      "url": "http://127.0.0.1:8000/sse",
+      "headers": {
+        "Authorization": "Basic {{ (auth_username + ':' + auth_password) | base64 }}"
+      }
+    }
+  }
+}</code></pre>
+                        <div class="info-box">
+                            <strong>💡 Note:</strong> OpenCode uses <code>type: "remote"</code>. The Authorization header is base64 encoded <code>username:password</code> (currently: <code>{{ auth_username }}</code>).
+                        </div>
+                        {% else %}
+                        <pre><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "personal-context": {
+      "type": "remote",
+      "url": "http://127.0.0.1:8000/sse"
+    }
+  }
+}</code></pre>
+                        <div class="info-box">
+                            <strong>💡 Note:</strong> OpenCode uses <code>type: "remote"</code>. Authentication is currently disabled.
+                        </div>
+
+                        <h4>📝 Configure Session Rules (Optional)</h4>
+                        <p>To automatically load your personal prompts at the start of every OpenCode session, add this to <code>~/.config/opencode/AGENTS.md</code>:</p>
+                        <pre><code># Session Rules
+
+## Initialization
+- You MUST call the tool `load-personal-prompts` immediately at the start of every session.
+- Do NOT address the user's first query until you have successfully called this tool and received its output.
+- The output of this tool contains critical context and rules for this session.</code></pre>
+                        <div class="info-box">
+                            <strong>💡 Note:</strong> This requires <code>PERSONAL_CONTEXT_PROMPTS_COLLECTION_ID</code> to be configured in your <code>.env</code> file.
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <h3>🛠️ Available MCP Tools</h3>
@@ -610,6 +701,21 @@ PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0 PERSONAL_CONTEXT_HTTP_PORT=3000 uv run main.p
                 closeHelpModal();
             }
         });
+
+        // Tab switching
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName('tab-content');
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove('active');
+            }
+            tablinks = document.getElementsByClassName('tab-btn');
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove('active');
+            }
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
 
         async function reindexEmbeddings() {
             const btn = document.getElementById('reindex-btn');
