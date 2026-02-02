@@ -7,6 +7,7 @@ from typing import Optional, List, Protocol
 @dataclass
 class UpstreamDocument:
     """Normalized document from any upstream provider."""
+
     id: str
     title: str
     content: str  # normalized from 'text' (Outline) or other field names
@@ -17,6 +18,7 @@ class UpstreamDocument:
 @dataclass
 class UpstreamCollection:
     """Normalized collection/folder from any upstream provider."""
+
     id: str
     name: str
     description: str = ""
@@ -25,6 +27,7 @@ class UpstreamCollection:
 @dataclass
 class DocumentPage:
     """Paginated list of document summaries."""
+
     documents: List[UpstreamDocument]
     has_more: bool
 
@@ -50,6 +53,10 @@ class UpstreamClient(Protocol):
 
     async def list_collections(self) -> List[UpstreamCollection]:
         """List all collections."""
+        ...
+
+    async def update_document(self, doc_id: str, content: str) -> None:
+        """Update document content by ID."""
         ...
 
     async def close(self) -> None:

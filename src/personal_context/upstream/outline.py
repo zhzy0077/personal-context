@@ -58,26 +58,15 @@ class OutlineClient:
         data = response.json()
         return data["data"]["id"]
 
-    async def update_document(
-        self,
-        doc_id: str,
-        title: Optional[str] = None,
-        content: Optional[str] = None,
-    ) -> None:
+    async def update_document(self, doc_id: str, content: str) -> None:
         """
         Update an existing document in Outline.
 
         Args:
             doc_id: Document ID
-            title: New title (optional)
-            content: New content (optional)
+            content: New content
         """
-        payload: Dict[str, Any] = {"id": doc_id}
-
-        if title is not None:
-            payload["title"] = title
-        if content is not None:
-            payload["text"] = content
+        payload: Dict[str, Any] = {"id": doc_id, "text": content}
 
         response = await self.client.post(
             f"{self.api_base}/documents.update",
@@ -235,13 +224,23 @@ class OutlineClient:
             for doc in page.documents:
                 if doc.updated_at > since_timestamp:
                     # Return raw dict for backwards compatibility
-                    documents.append({
-                        "id": doc.id,
-                        "title": doc.title,
-                        "text": doc.content,
-                        "updatedAt": datetime.fromtimestamp(doc.updated_at).isoformat() + "Z",
-                        "createdAt": datetime.fromtimestamp(doc.created_at).isoformat() + "Z" if doc.created_at else None,
-                    })
+                    documents.append(
+                        {
+                            "id": doc.id,
+                            "title": doc.title,
+                            "text": doc.content,
+                            "updatedAt": datetime.fromtimestamp(
+                                doc.updated_at
+                            ).isoformat()
+                            + "Z",
+                            "createdAt": datetime.fromtimestamp(
+                                doc.created_at
+                            ).isoformat()
+                            + "Z"
+                            if doc.created_at
+                            else None,
+                        }
+                    )
                 else:
                     # Since sorted by updatedAt DESC, we can stop here
                     return documents
@@ -257,4 +256,3 @@ class OutlineClient:
     async def close(self):
         """Close the HTTP client."""
         await self.client.aclose()
-

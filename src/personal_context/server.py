@@ -29,12 +29,14 @@ sync_orchestrator: Optional[SyncOrchestrator] = None
 templates_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
 
+
 # Add base64 filter for template
 def base64_encode(value: str) -> str:
     """Encode a string to base64."""
     return base64.b64encode(value.encode()).decode()
 
-templates.env.filters['base64'] = base64_encode
+
+templates.env.filters["base64"] = base64_encode
 
 
 class BasicAuthMiddleware(BaseHTTPMiddleware):
@@ -71,7 +73,9 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
                 return Response(
                     content="Unauthorized",
                     status_code=401,
-                    headers={"WWW-Authenticate": 'Basic realm="Personal Context Store"'},
+                    headers={
+                        "WWW-Authenticate": 'Basic realm="Personal Context Store"'
+                    },
                 )
         except Exception:
             return Response(
@@ -102,7 +106,9 @@ def get_index_stats() -> dict:
     conn = get_connection()
 
     # Total document count
-    total_docs = conn.execute("SELECT COUNT(*) as count FROM content").fetchone()["count"]
+    total_docs = conn.execute("SELECT COUNT(*) as count FROM content").fetchone()[
+        "count"
+    ]
 
     # Documents by source type
     by_source = conn.execute(
@@ -157,8 +163,14 @@ def get_index_stats() -> dict:
 
     return {
         "total_docs": total_docs,
-        "by_source": [{"source_type": row["source_type"], "count": row["count"]} for row in by_source],
-        "by_collection": [{"collection_id": row["collection_id"], "count": row["count"]} for row in by_collection],
+        "by_source": [
+            {"source_type": row["source_type"], "count": row["count"]}
+            for row in by_source
+        ],
+        "by_collection": [
+            {"collection_id": row["collection_id"], "count": row["count"]}
+            for row in by_collection
+        ],
         "sync_status": [
             {
                 "collection_id": row["collection_id"],
@@ -197,8 +209,12 @@ async def index_page(request: Request) -> HTMLResponse:
         "stats": stats,
         "format_timestamp": format_timestamp,
         "auth_enabled": settings.is_http_auth_enabled(),
-        "auth_username": settings.http_auth_username if settings.is_http_auth_enabled() else None,
-        "auth_password": settings.http_auth_password if settings.is_http_auth_enabled() else None,
+        "auth_username": settings.http_auth_username
+        if settings.is_http_auth_enabled()
+        else None,
+        "auth_password": settings.http_auth_password
+        if settings.is_http_auth_enabled()
+        else None,
     }
 
     return templates.TemplateResponse("index.html", context)
@@ -210,12 +226,12 @@ async def stats_api(request: Request) -> JSONResponse:
     stats = get_index_stats()
 
     # Format timestamps for JSON
-    for item in stats['sync_status']:
-        item['last_pull_at_formatted'] = format_timestamp(item['last_pull_at'])
-        item['updated_at_formatted'] = format_timestamp(item['updated_at'])
+    for item in stats["sync_status"]:
+        item["last_pull_at_formatted"] = format_timestamp(item["last_pull_at"])
+        item["updated_at_formatted"] = format_timestamp(item["updated_at"])
 
-    for doc in stats['recent_docs']:
-        doc['created_at_formatted'] = format_timestamp(doc['created_at'])
+    for doc in stats["recent_docs"]:
+        doc["created_at_formatted"] = format_timestamp(doc["created_at"])
 
     return JSONResponse(content=stats)
 
@@ -230,16 +246,13 @@ async def reindex_api(request: Request) -> JSONResponse:
                 content={
                     "error": "Embedding client not initialized. Server may still be starting up. Please wait a moment and try again."
                 },
-                status_code=503
+                status_code=503,
             )
 
         result = await reindex_embeddings()
         return JSONResponse(content=result)
     except Exception as e:
-        return JSONResponse(
-            content={"error": str(e)},
-            status_code=500
-        )
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 @mcp.custom_route("/api/resync", methods=["POST"])
@@ -252,16 +265,13 @@ async def resync_api(request: Request) -> JSONResponse:
                 content={
                     "error": "Server not fully initialized. Please wait a moment and try again."
                 },
-                status_code=503
+                status_code=503,
             )
 
         result = await full_resync()
         return JSONResponse(content=result)
     except Exception as e:
-        return JSONResponse(
-            content={"error": str(e)},
-            status_code=500
-        )
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 @mcp.tool()
@@ -300,16 +310,20 @@ async def search(
     # Format results for output
     formatted_results = []
     for result in results:
-        formatted_results.append({
-            "id": result["id"],
-            "title": result["title"],
-            "content": result["content"][:500] + "..." if len(result["content"]) > 500 else result["content"],
-            "source_type": result["source_type"],
-            "source_url": result["source_url"],
-            "score": round(result["score"], 4),
-            "upstream_doc_id": result["upstream_doc_id"],
-            "collection_id": result["collection_id"],
-        })
+        formatted_results.append(
+            {
+                "id": result["id"],
+                "title": result["title"],
+                "content": result["content"][:500] + "..."
+                if len(result["content"]) > 500
+                else result["content"],
+                "source_type": result["source_type"],
+                "source_url": result["source_url"],
+                "score": round(result["score"], 4),
+                "upstream_doc_id": result["upstream_doc_id"],
+                "collection_id": result["collection_id"],
+            }
+        )
 
     return formatted_results
 
@@ -348,7 +362,9 @@ async def add_content(
     if provider:
         upstream_client = upstream_registry.get(provider)
         if not upstream_client:
-            raise ValueError(f"Provider '{provider}' not configured. Available: {upstream_registry.get_providers()}")
+            raise ValueError(
+                f"Provider '{provider}' not configured. Available: {upstream_registry.get_providers()}"
+            )
         provider_name = provider
     else:
         # Use default provider from settings
@@ -363,6 +379,44 @@ async def add_content(
             upstream_client = upstream_registry.get(provider_name)
 
     conn = get_connection()
+    existing = conn.execute(
+        "SELECT id, content, upstream_doc_id FROM content WHERE title = ? AND source_type = ?",
+        (title, provider_name),
+    ).fetchone()
+
+    if existing:
+        timestamp = datetime.now().isoformat()
+        new_content = (
+            existing["content"] + f"\n--- Appended at {timestamp} ---\n" + content
+        )
+
+        if existing["upstream_doc_id"]:
+            await upstream_client.update_document(
+                doc_id=existing["upstream_doc_id"],
+                content=new_content,
+            )
+
+        conn.execute(
+            "UPDATE content SET content = ?, updated_at = unixepoch('now') WHERE id = ?",
+            (new_content, existing["id"]),
+        )
+        conn.commit()
+
+        return {
+            "content_id": existing["id"],
+            "upstream_doc_id": existing["upstream_doc_id"],
+            "provider": provider_name,
+            "message": f"Content appended to existing note '{title}'",
+        }
+
+    all_matches = conn.execute(
+        "SELECT id FROM content WHERE title = ? AND source_type = ?",
+        (title, provider_name),
+    ).fetchall()
+    if len(all_matches) > 1:
+        raise ValueError(
+            f"Multiple documents found with title '{title}'. Use content_id to append to specific document."
+        )
 
     # Generate embedding
     embedding = await embedding_client.embed(content)
@@ -544,9 +598,7 @@ async def reindex_embeddings() -> Dict[str, Any]:
         raise RuntimeError(f"Failed to recreate content_vec table: {str(e)}")
 
     # Get all content
-    rows = conn.execute(
-        "SELECT id, content FROM content ORDER BY id"
-    ).fetchall()
+    rows = conn.execute("SELECT id, content FROM content ORDER BY id").fetchall()
 
     total = len(rows)
     success = 0
@@ -580,7 +632,9 @@ async def reindex_embeddings() -> Dict[str, Any]:
         "total": total,
         "success": success,
         "errors": errors,
-        "error_details": error_details[:10] if error_details else [],  # Limit to first 10 errors
+        "error_details": error_details[:10]
+        if error_details
+        else [],  # Limit to first 10 errors
         "message": f"Reindexing complete: {success}/{total} successful, {errors} errors",
     }
 
