@@ -378,45 +378,87 @@ async def add_content(
             provider_name = providers[0]
             upstream_client = upstream_registry.get(provider_name)
 
-    conn = get_connection()
-    existing = conn.execute(
-        "SELECT id, content, upstream_doc_id FROM content WHERE title = ? AND source_type = ?",
-        (title, provider_name),
-    ).fetchone()
+    # Determine collection_id for searching upstream
+    search_collection_id = collection_id or settings.outline_collection_id
 
-    if existing:
-        timestamp = datetime.now().isoformat()
-        new_content = (
-            existing["content"] + f"\n--- Appended at {timestamp} ---\n" + content
+    # Search upstream for existing document by title to avoid duplicates
+    try:
+        page = await upstream_client.list_documents(
+            collection_id=search_collection_id,
+            limit=100,
+            offset=0,
         )
+        for doc in page.documents:
+            if doc.title == title:
+                # Document exists upstream - append to it
+                timestamp = datetime.now().isoformat()
+                new_content = (
+                    doc.content + f"\n--- Appended at {timestamp} ---\n" + content
+                )
 
-        if existing["upstream_doc_id"]:
-            await upstream_client.update_document(
-                doc_id=existing["upstream_doc_id"],
-                content=new_content,
-            )
+                await upstream_client.update_document(
+                    doc_id=doc.id,
+                    content=new_content,
+                )
 
-        conn.execute(
-            "UPDATE content SET content = ?, updated_at = unixepoch('now') WHERE id = ?",
-            (new_content, existing["id"]),
-        )
-        conn.commit()
+                conn = get_connection()
+                existing_local = conn.execute(
+                    "SELECT id FROM content WHERE upstream_doc_id = ?",
+                    (doc.id,),
+                ).fetchone()
 
-        return {
-            "content_id": existing["id"],
-            "upstream_doc_id": existing["upstream_doc_id"],
-            "provider": provider_name,
-            "message": f"Content appended to existing note '{title}'",
-        }
+                if existing_local:
+                    new_embedding = await embedding_client.embed(new_content)
+                    embedding_str = "[" + ",".join(str(x) for x in new_embedding) + "]"
+                    conn.execute(
+                        "UPDATE content SET content = ?, updated_at = unixepoch('now') WHERE id = ?",
+                        (new_content, existing_local["id"]),
+                    )
+                    conn.execute(
+                        "INSERT OR REPLACE INTO content_vec (content_id, embedding) VALUES (?, ?)",
+                        (existing_local["id"], embedding_str),
+                    )
+                    conn.commit()
 
-    all_matches = conn.execute(
-        "SELECT id FROM content WHERE title = ? AND source_type = ?",
-        (title, provider_name),
-    ).fetchall()
-    if len(all_matches) > 1:
-        raise ValueError(
-            f"Multiple documents found with title '{title}'. Use content_id to append to specific document."
-        )
+                    return {
+                        "content_id": existing_local["id"],
+                        "upstream_doc_id": doc.id,
+                        "provider": provider_name,
+                        "message": f"Content appended to existing note '{title}'",
+                    }
+                else:
+                    new_embedding = await embedding_client.embed(new_content)
+                    embedding_str = "[" + ",".join(str(x) for x in new_embedding) + "]"
+                    cursor = conn.execute(
+                        """
+                        INSERT INTO content (source_type, source_url, collection_id, title, content, metadata, upstream_doc_id)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            provider_name,
+                            source_url,
+                            collection_id,
+                            title,
+                            new_content,
+                            json.dumps(metadata) if metadata else None,
+                            doc.id,
+                        ),
+                    )
+                    content_id = cursor.lastrowid
+                    conn.execute(
+                        "INSERT INTO content_vec (content_id, embedding) VALUES (?, ?)",
+                        (content_id, embedding_str),
+                    )
+                    conn.commit()
+
+                    return {
+                        "content_id": content_id,
+                        "upstream_doc_id": doc.id,
+                        "provider": provider_name,
+                        "message": f"Content appended to synced note '{title}'",
+                    }
+    except Exception:
+        pass  # If search fails, proceed with creation
 
     # Generate embedding
     embedding = await embedding_client.embed(content)

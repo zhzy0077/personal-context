@@ -64,7 +64,7 @@ PERSONAL_CONTEXT_SYNC_ENABLED=true
 PERSONAL_CONTEXT_SYNC_INTERVAL=300
 PERSONAL_CONTEXT_SYNC_COLLECTIONS=collection_id_1,collection_id_2
 
-# HTTP Server (optional, for MCP over HTTP/SSE)
+# HTTP Server (optional, for MCP over Streamable HTTP)
 PERSONAL_CONTEXT_HTTP_HOST=127.0.0.1
 PERSONAL_CONTEXT_HTTP_PORT=8000
 ```
@@ -230,7 +230,7 @@ See `src/personal_context/upstream/outline.py` and `trilium.py` for examples.
 ### Running the MCP Server
 
 ```bash
-# Run the server (provides both stdio and HTTP/SSE endpoints)
+# Run the server (provides both stdio and Streamable HTTP endpoints)
 uv run main.py
 
 # Override host/port via environment variables
@@ -238,7 +238,7 @@ PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0 PERSONAL_CONTEXT_HTTP_PORT=3000 uv run main.p
 ```
 
 The server provides:
-- HTTP/SSE endpoint at `http://127.0.0.1:8000/sse` (or your configured host/port)
+- MCP endpoint at `http://127.0.0.1:8000/mcp` (or your configured host/port)
 - Web UI at `http://127.0.0.1:8000/`
 - API endpoints at `http://127.0.0.1:8000/api/*`
 
@@ -265,7 +265,7 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-**HTTP/SSE Transport (for remote servers)**
+**Streamable HTTP Transport (for remote servers)**
 
 Add to your `claude_desktop_config.json`:
 
@@ -273,7 +273,8 @@ Add to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "personal-context": {
-      "url": "http://127.0.0.1:8000/sse"
+      "type": "http",
+      "url": "http://127.0.0.1:8000/mcp"
     }
   }
 }
@@ -299,7 +300,7 @@ ip addr show | grep inet
 ipconfig
 ```
 
-4. Connect using: `http://YOUR_SERVER_IP:8000/sse`
+4. Connect using: `http://YOUR_SERVER_IP:8000/mcp`
 
 ## MCP Tools
 

@@ -4,7 +4,6 @@ import httpx
 from datetime import datetime
 from typing import Optional, List
 
-from ..config import settings
 from .base import UpstreamDocument, UpstreamCollection, DocumentPage
 
 
@@ -62,6 +61,19 @@ class TriliumClient:
 
         data = response.json()
         return data["note"]["noteId"]
+
+    async def update_document(self, doc_id: str, content: str) -> None:
+        """Update note content in Trilium.
+
+        Args:
+            doc_id: Note ID
+            content: New content
+        """
+        response = await self.client.put(
+            f"{self.api_base}/notes/{doc_id}/content",
+            content=content,
+        )
+        response.raise_for_status()
 
     async def get_document(self, doc_id: str) -> UpstreamDocument:
         """
@@ -137,7 +149,9 @@ class TriliumClient:
                 content_response = await self.client.get(
                     f"{self.api_base}/notes/{note_id}/content"
                 )
-                content = content_response.text if content_response.status_code == 200 else ""
+                content = (
+                    content_response.text if content_response.status_code == 200 else ""
+                )
             except Exception:
                 content = ""
 
@@ -215,7 +229,11 @@ class TriliumClient:
         # Remove timezone suffix and parse
         # Format: "2024-01-29 14:30:45.123+0000" -> "2024-01-29 14:30:45.123"
         timestamp_clean = timestamp_str.split("+")[0].split("-")[0:3]
-        timestamp_clean = "-".join(timestamp_clean[:3]) + " " + timestamp_str.split(" ")[1].split("+")[0]
+        timestamp_clean = (
+            "-".join(timestamp_clean[:3])
+            + " "
+            + timestamp_str.split(" ")[1].split("+")[0]
+        )
 
         # Parse datetime
         dt = datetime.strptime(timestamp_clean, "%Y-%m-%d %H:%M:%S.%f")

@@ -15,7 +15,7 @@ uv sync
 # Run MCP server (stdio mode)
 uv run main.py
 
-# Run HTTP/SSE server
+# Run Streamable HTTP server
 uv run http_server.py
 
 # Test with MCP Inspector

@@ -46,14 +46,16 @@ async def lifespan(app):
     # Register all configured upstream providers
     configured_providers = settings.get_configured_providers()
     if not configured_providers:
-        logger.warning("No upstream providers configured! Please configure at least one provider.")
+        logger.warning(
+            "No upstream providers configured! Please configure at least one provider."
+        )
     else:
         logger.info(f"Configured providers: {', '.join(configured_providers)}")
 
     if settings.is_outline_configured():
         logger.info("Registering Outline client...")
         outline_client = OutlineClient()
-        upstream_registry.register('outline', outline_client)
+        upstream_registry.register("outline", outline_client)
 
     if settings.is_trilium_configured():
         logger.info("Registering Trilium client...")
@@ -61,10 +63,11 @@ async def lifespan(app):
             api_base=settings.trilium_api_base,
             api_token=settings.trilium_api_token,
         )
-        upstream_registry.register('trilium', trilium_client)
+        upstream_registry.register("trilium", trilium_client)
 
     # Set the clients in the mcp server module
     import src.personal_context.server as server_module
+
     server_module.embedding_client = embedding_client
     server_module.upstream_registry = upstream_registry
 
@@ -118,7 +121,7 @@ def main():
     configure_logging()
 
     # Get the FastMCP Starlette app (without lifespan)
-    mcp_app = mcp.sse_app()
+    mcp_app = mcp.streamable_http_app()
 
     # Create main Starlette app with our lifespan
     app = Starlette(
@@ -126,14 +129,21 @@ def main():
         lifespan=lifespan,
         routes=[
             Mount("/", app=mcp_app),
-        ]
+        ],
     )
 
     # Add basic auth middleware
     app.add_middleware(BasicAuthMiddleware)
 
-    logging.info(f"Starting Personal Context MCP server on http://{settings.http_host}:{settings.http_port}")
-    logging.info(f"SSE endpoint: http://{settings.http_host}:{settings.http_port}/sse")
+    logging.info(
+        f"Starting Personal Context MCP server on http://{settings.http_host}:{settings.http_port}"
+    )
+    logging.info(
+        "MCP endpoint: http://%s:%s%s",
+        settings.http_host,
+        settings.http_port,
+        mcp.settings.streamable_http_path,
+    )
 
     # Configure uvicorn to use our logging format
     log_config = uvicorn.config.LOGGING_CONFIG.copy()

@@ -253,24 +253,25 @@ Add to `claude_desktop_config.json`:
 }
 ```
 
-**HTTP/SSE Transport (for remote servers):**
+**Streamable HTTP Transport (for remote servers):**
 ```json
 {
   "mcpServers": {
     "personal-context": {
-      "url": "http://127.0.0.1:8000/sse"
+      "type": "http",
+      "url": "http://127.0.0.1:8000/mcp"
     }
   }
 }
 ```
 
-For remote access, set `PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0` in `.env` and connect via `http://YOUR_SERVER_IP:8000/sse`
+For remote access, set `PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0` in `.env` and connect via `http://YOUR_SERVER_IP:8000/mcp`
 
 ## HTTP Basic Authentication
 
 The web server supports HTTP Basic Authentication to protect all endpoints. When enabled:
 
-- **All endpoints require authentication**: `/` (homepage), `/api/*` (API endpoints), and `/sse` (MCP endpoint)
+- **All endpoints require authentication**: `/` (homepage), `/api/*` (API endpoints), and `/mcp` (MCP endpoint)
 - Authentication uses standard HTTP Basic Auth headers
 
 **To enable authentication:**
@@ -296,13 +297,14 @@ curl -u username:password http://localhost:8000/
 
 **MCP Client Configuration with Authentication:**
 
-When authentication is enabled, you need to include credentials in the SSE URL:
+When authentication is enabled, you need to include credentials in the MCP URL:
 
 ```json
 {
   "mcpServers": {
     "personal-context": {
-      "url": "http://username:password@127.0.0.1:8000/sse"
+      "type": "http",
+      "url": "http://username:password@127.0.0.1:8000/mcp"
     }
   }
 }

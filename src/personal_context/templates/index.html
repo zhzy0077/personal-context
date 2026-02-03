@@ -521,7 +521,7 @@
                 <li><code>GET /api/stats</code> - JSON statistics</li>
                 <li><code>POST /api/reindex</code> - Reindex all embeddings</li>
                 <li><code>POST /api/resync</code> - Full resync from upstream</li>
-                <li><code>GET /sse</code> - MCP Server-Sent Events endpoint</li>
+                <li><code>GET /mcp</code> - MCP Streamable HTTP endpoint</li>
             </ul>
             <p style="margin-top: 15px;">
                 Personal Context Store v1.0 |
@@ -563,15 +563,15 @@ PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0 PERSONAL_CONTEXT_HTTP_PORT=3000 uv run main.p
                             <li><strong>Windows:</strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
                         </ul>
 
-                        <h4>🌐 HTTP/SSE Transport Configuration</h4>
-                        <p>This server uses HTTP Server-Sent Events (SSE) for MCP communication:</p>
+                        <h4>🌐 Streamable HTTP Transport Configuration</h4>
+                        <p>This server uses Streamable HTTP for MCP communication:</p>
 
                         {% if auth_enabled %}
                         <pre><code>{
   "mcpServers": {
     "personal-context": {
-      "type": "sse",
-      "url": "http://127.0.0.1:8000/sse",
+      "type": "http",
+      "url": "http://127.0.0.1:8000/mcp",
       "headers": {
         "Authorization": "Basic {{ (auth_username + ':' + auth_password) | base64 }}"
       }
@@ -585,8 +585,8 @@ PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0 PERSONAL_CONTEXT_HTTP_PORT=3000 uv run main.p
                         <pre><code>{
   "mcpServers": {
     "personal-context": {
-      "type": "sse",
-      "url": "http://127.0.0.1:8000/sse"
+      "type": "http",
+      "url": "http://127.0.0.1:8000/mcp"
     }
   }
 }</code></pre>
@@ -622,7 +622,7 @@ PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0 PERSONAL_CONTEXT_HTTP_PORT=3000 uv run main.p
   "mcp": {
     "personal-context": {
       "type": "remote",
-      "url": "http://127.0.0.1:8000/sse",
+      "url": "http://127.0.0.1:8000/mcp",
       "headers": {
         "Authorization": "Basic {{ (auth_username + ':' + auth_password) | base64 }}"
       }
@@ -638,7 +638,7 @@ PERSONAL_CONTEXT_HTTP_HOST=0.0.0.0 PERSONAL_CONTEXT_HTTP_PORT=3000 uv run main.p
   "mcp": {
     "personal-context": {
       "type": "remote",
-      "url": "http://127.0.0.1:8000/sse"
+      "url": "http://127.0.0.1:8000/mcp"
     }
   }
 }</code></pre>
