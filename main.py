@@ -87,7 +87,9 @@ async def lifespan(app):
 
     logger.info("Server initialization complete!")
 
-    yield
+    # Run FastMCP session manager (manages task group for SSE/streams)
+    async with mcp.session_manager.run():
+        yield
 
     # Shutdown
     logger.info("Shutting down server...")
